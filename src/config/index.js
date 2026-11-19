@@ -41,6 +41,19 @@ export default {
     refreshExpiresIn: process.env.ADMIN_JWT_REFRESH_EXPIRES_IN || '1d',
   },
   superAdmin,
+  // Browser origins allowed to call the API with credentials (cookies). Comma-separated.
+  corsOrigins: (process.env.CORS_ORIGINS || 'http://localhost:5173')
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean),
+  // httpOnly cookie that carries the admin refresh token for the admin panel.
+  adminCookie: {
+    name: 'admin_rt',
+    // 'strict' works when panel and API share a site (e.g. localhost:5173 + localhost:5050,
+    // or admin.example.com + api.example.com). Use 'none' (requires HTTPS) for different sites.
+    sameSite: process.env.ADMIN_COOKIE_SAMESITE || 'strict',
+    secure: env === 'production' || process.env.ADMIN_COOKIE_SAMESITE === 'none',
+  },
   r2: {
     accountId: process.env.R2_ACCOUNT_ID,
     accessKeyId: process.env.R2_ACCESS_KEY_ID,

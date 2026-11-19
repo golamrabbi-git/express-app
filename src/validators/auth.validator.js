@@ -34,6 +34,11 @@ export const refreshTokenSchema = z.object({
   refreshToken: z.string({ error: 'refreshToken is required' }).min(1, 'refreshToken is required'),
 });
 
+// Admin refresh/logout: the token may instead come from the httpOnly cookie (X-Auth-Mode: cookie).
+export const optionalRefreshTokenSchema = z.object({
+  refreshToken: z.string().min(1, 'refreshToken must not be empty').optional(),
+});
+
 // PATCH /api/auth/me. Phone can be changed but not removed; send null for email to remove it.
 // The avatar is managed only through PUT/DELETE /api/auth/me/avatar.
 const PROFILE_FIELDS = ['name', 'phone', 'email'];

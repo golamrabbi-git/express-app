@@ -4,7 +4,7 @@ import { authenticateAdmin, requirePermission as can } from '../middlewares/admi
 import { adminAuthLimiter, uploadLimiter } from '../middlewares/rateLimit.js';
 import { FILE_TYPES, uploadSingle } from '../middlewares/upload.js';
 import { validate } from '../middlewares/validate.js';
-import { adminLoginSchema, refreshTokenSchema } from '../validators/auth.validator.js';
+import { adminLoginSchema, optionalRefreshTokenSchema } from '../validators/auth.validator.js';
 import {
   adminListQuerySchema,
   changePasswordSchema,
@@ -20,8 +20,9 @@ const router = Router();
 
 // Auth (public)
 router.post('/auth/login', adminAuthLimiter, validate({ body: adminLoginSchema }), admin.login);
-router.post('/auth/refresh', adminAuthLimiter, validate({ body: refreshTokenSchema }), admin.refresh);
-router.post('/auth/logout', validate({ body: refreshTokenSchema }), admin.logout);
+// refreshToken comes from the body, or from the admin_rt cookie when X-Auth-Mode: cookie is sent.
+router.post('/auth/refresh', adminAuthLimiter, validate({ body: optionalRefreshTokenSchema }), admin.refresh);
+router.post('/auth/logout', validate({ body: optionalRefreshTokenSchema }), admin.logout);
 
 // Everything below needs a valid admin token.
 router.use(authenticateAdmin);

@@ -12,3 +12,5 @@ const createLimiter = (limit) =>
 // Separate counters, so user traffic can't lock admins out (or the other way round).
 export const authLimiter = createLimiter(20);
 export const adminAuthLimiter = createLimiter(10);
+// Uploads are expensive (memory + storage), so cap them per IP too.
+export const uploadLimiter = createLimiter(30);

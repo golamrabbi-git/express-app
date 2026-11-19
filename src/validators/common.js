@@ -48,13 +48,11 @@ export const phoneSchema = z.string({ error: PHONE_MESSAGE }).transform((value, 
   return phone;
 });
 
-export const avatarSchema = z
-  .string({ error: 'Avatar must be an http(s) URL' })
-  .trim()
-  .max(2048, 'Avatar URL must be at most 2048 characters')
-  .pipe(z.url({ protocol: /^https?$/, error: 'Avatar must be an http(s) URL' }));
+// Avatars are only set by uploading an image (PUT /api/auth/me/avatar), never by sending a URL.
+export const AVATAR_UPLOAD_ONLY = 'Avatar can only be set by uploading an image to PUT /api/auth/me/avatar';
+export const noAvatarSchema = z.never({ error: AVATAR_UPLOAD_ONLY }).optional();
 
-export const enumSchema =(values, field) => z.enum(values, { error: `${field} must be one of: ${values.join(', ')}` });
+export const enumSchema = (values, field) => z.enum(values, { error: `${field} must be one of: ${values.join(', ')}` });
 
 export const statusSchema = enumSchema(['active', 'suspended'], 'status');
 

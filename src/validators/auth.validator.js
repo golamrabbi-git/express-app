@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { atLeastOne, avatarSchema, emailSchema, nameSchema, passwordSchema, phoneSchema } from './common.js';
+import { atLeastOne, emailSchema, nameSchema, noAvatarSchema, passwordSchema, phoneSchema } from './common.js';
 
 const requiredPassword = z.string({ error: 'Password is required' }).min(1, 'Password is required');
 
@@ -9,7 +9,7 @@ export const registerSchema = z.object({
   phone: phoneSchema,
   email: emailSchema.optional(),
   password: passwordSchema,
-  avatar: avatarSchema.optional(),
+  avatar: noAvatarSchema, // upload it after registering
 });
 
 // Users log in with exactly one of phone or email.
@@ -34,13 +34,14 @@ export const refreshTokenSchema = z.object({
   refreshToken: z.string({ error: 'refreshToken is required' }).min(1, 'refreshToken is required'),
 });
 
-// PATCH /api/auth/me. Phone can be changed but not removed; send null for email or avatar to remove it.
-const PROFILE_FIELDS = ['name', 'phone', 'email', 'avatar'];
+// PATCH /api/auth/me. Phone can be changed but not removed; send null for email to remove it.
+// The avatar is managed only through PUT/DELETE /api/auth/me/avatar.
+const PROFILE_FIELDS = ['name', 'phone', 'email'];
 export const updateProfileSchema = z
   .object({
     name: nameSchema.optional(),
     phone: phoneSchema.optional(),
     email: emailSchema.nullable().optional(),
-    avatar: avatarSchema.nullable().optional(),
+    avatar: noAvatarSchema,
   })
   .refine(atLeastOne(PROFILE_FIELDS), { message: `Provide at least one of: ${PROFILE_FIELDS.join(', ')}` });

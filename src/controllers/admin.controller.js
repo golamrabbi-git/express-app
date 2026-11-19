@@ -61,3 +61,11 @@ export const deleteUser = async (req, res) => {
   await adminService.deleteUser(req.params.id);
   res.status(204).end();
 };
+
+// ---- Files ----
+export const uploadFile = async (req, res) => res.status(201).json({ file: await adminService.uploadFile(req.file) });
+
+export const deleteFile = async (req, res) => {
+  await adminService.deleteFile(req.body.key);
+  res.status(204).end();
+};

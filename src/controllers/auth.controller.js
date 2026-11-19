@@ -27,3 +27,11 @@ export const me = async (req, res) => {
 export const updateMe = async (req, res) => {
   res.json({ user: await authService.updateProfile(req.user.id, req.body) });
 };
+
+export const uploadAvatar = async (req, res) => {
+  res.json({ user: await authService.setAvatar(req.user.id, req.file) });
+};
+
+export const deleteAvatar = async (req, res) => {
+  res.json({ user: await authService.removeAvatar(req.user.id) });
+};

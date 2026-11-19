@@ -2,7 +2,6 @@ import { z } from 'zod';
 import { ASSIGNABLE_ROLES, PERMISSIONS, ROLES } from '../constants/permissions.js';
 import {
   atLeastOne,
-  avatarSchema,
   enumSchema,
   emailSchema,
   nameSchema,
@@ -51,19 +50,27 @@ export const updateAdminSchema = z
 
 export const permissionsSchema = z.object({ permissions: permissionList });
 
-// Phone can be changed but not removed; send null for email or avatar to remove it.
+// Phone can be changed but not removed; send null for email to remove it.
+// Admins can only remove a user's avatar (avatar: null), e.g. an inappropriate picture; only the user uploads one.
 const USER_UPDATE_FIELDS = ['name', 'phone', 'email', 'avatar', 'status'];
 export const updateUserSchema = z
   .object({
     name: nameSchema.optional(),
     phone: phoneSchema.optional(),
     email: emailSchema.nullable().optional(),
-    avatar: avatarSchema.nullable().optional(),
+    avatar: z.null({ error: 'Admins can only remove an avatar (send null); users upload their own' }).optional(),
     status: statusSchema.optional(),
   })
   .refine(atLeastOne(USER_UPDATE_FIELDS), { message: `Provide at least one of: ${USER_UPDATE_FIELDS.join(', ')}` });
 
-export const adminListQuerySchema = z.object({
+// Only keys this API created under files/ can be deleted (not avatars or anything else in the bucket).
+export const deleteFileSchema = z.object({
+  key: z
+    .string({ error: 'key is required' })
+    .regex(/^files\/\d{4}\/\d{2}\/[0-9a-f-]{36}\.[a-z]{3,4}$/, 'key must be a file key returned by POST /api/admin/files'),
+});
+
+export const adminListQuerySchema =z.object({
   ...paginationShape,
   role: enumSchema(ROLES, 'role').optional(),
   status: statusSchema.optional(),

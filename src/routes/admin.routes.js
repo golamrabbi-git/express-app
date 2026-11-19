@@ -1,13 +1,15 @@
 import { Router } from 'express';
 import * as admin from '../controllers/admin.controller.js';
 import { authenticateAdmin, requirePermission as can } from '../middlewares/adminAuth.js';
-import { adminAuthLimiter } from '../middlewares/rateLimit.js';
+import { adminAuthLimiter, uploadLimiter } from '../middlewares/rateLimit.js';
+import { FILE_TYPES, uploadSingle } from '../middlewares/upload.js';
 import { validate } from '../middlewares/validate.js';
 import { adminLoginSchema, refreshTokenSchema } from '../validators/auth.validator.js';
 import {
   adminListQuerySchema,
   changePasswordSchema,
   createAdminSchema,
+  deleteFileSchema,
   permissionsSchema,
   updateAdminSchema,
   updateUserSchema,
@@ -39,5 +41,9 @@ router.get('/users', can('users:read'), validate({ query: userListQuerySchema })
 router.get('/users/:id', can('users:read'), admin.getUser);
 router.patch('/users/:id', can('users:update'), validate({ body: updateUserSchema }), admin.updateUser);
 router.delete('/users/:id', can('users:delete'), admin.deleteUser);
+
+// multipart/form-data, field "file": JPG, PNG, WebP, GIF or PDF up to 10 MB
+router.post('/files', can('files:upload'), uploadLimiter, uploadSingle('file', { maxMB: 10, types: FILE_TYPES }), admin.uploadFile);
+router.delete('/files', can('files:delete'), validate({ body: deleteFileSchema }), admin.deleteFile);
 
 export default router;

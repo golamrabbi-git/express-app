@@ -65,6 +65,11 @@
       "key": "phone",
       "value": "+8801712345678",
       "type": "string"
+    },
+    {
+      "key": "fileKey",
+      "value": "",
+      "type": "string"
     }
   ],
   "item": [
@@ -160,7 +165,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Rabbi\",\n  \"phone\": \"{{phone}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\",\n  \"avatar\": \"https://cdn.example.com/avatars/rabbi.png\"\n}"
+              "raw": "{\n  \"name\": \"Rabbi\",\n  \"phone\": \"{{phone}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/register",
@@ -173,7 +178,7 @@
                 "register"
               ]
             },
-            "description": "Create an account. phone is required and unique: 01712345678 or +8801712345678 (stored as +8801712345678); email and avatar are optional. 409 if the phone or email is taken, 400 on validation errors."
+            "description": "Create an account. phone is required and unique: 01712345678 or +8801712345678 (stored as +8801712345678); email is optional. Upload an avatar afterwards with Upload avatar. 409 if the phone or email is taken, 400 on validation errors."
           }
         },
         {
@@ -292,7 +297,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Rabbi Hasan\",\n  \"email\": \"{{email}}\",\n  \"avatar\": null\n}"
+              "raw": "{\n  \"name\": \"Rabbi Hasan\",\n  \"email\": \"{{email}}\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/me",
@@ -305,7 +310,100 @@
                 "me"
               ]
             },
-            "description": "Update your own name, phone, email or avatar. Phone can be changed but not removed; send null to remove email or avatar. 409 if the phone or email is taken."
+            "description": "Update your own name, phone or email. Phone can be changed but not removed; send null to remove email. The avatar can only be changed with Upload avatar / Remove avatar. 409 if the phone or email is taken."
+          }
+        },
+        {
+          "name": "Upload avatar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": [],
+                  "description": "JPG, PNG or WebP, max 2 MB"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me/avatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me",
+                "avatar"
+              ]
+            },
+            "description": "multipart/form-data with one file in the \"avatar\" field (JPG, PNG or WebP, max 2 MB). Stored in R2; the old avatar file is deleted. In Postman pick a file in the Body tab first."
+          }
+        },
+        {
+          "name": "Remove avatar",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me/avatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me",
+                "avatar"
+              ]
+            },
+            "description": "Sets avatar to null and deletes the stored file."
           }
         },
         {
@@ -1089,7 +1187,7 @@
                     "{{userId}}"
                   ]
                 },
-                "description": "Needs users:update. Any of name, phone, email, avatar, status. Phone can be changed but not removed; null removes email or avatar. Suspending blocks login and ends the user's sessions."
+                "description": "Needs users:update. Any of name, phone, email, status, or avatar: null to remove the user's avatar (admins cannot set one). Phone can be changed but not removed; null removes email. Suspending blocks login and ends the user's sessions."
               }
             },
             {
@@ -1121,6 +1219,92 @@
                   ]
                 },
                 "description": "Needs users:delete."
+              }
+            }
+          ]
+        },
+        {
+          "name": "Files",
+          "item": [
+            {
+              "name": "Upload file",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('201 Created', () => pm.response.to.have.status(201));",
+                      "pm.collectionVariables.set('fileKey', pm.response.json().file.key);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": [],
+                      "description": "JPG, PNG, WebP, GIF or PDF, max 10 MB"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/files",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "files"
+                  ]
+                },
+                "description": "Needs files:upload. multipart/form-data, one file in the \"file\" field (JPG, PNG, WebP, GIF or PDF, max 10 MB). Returns { file: { key, url, contentType, size, originalName } } and saves key into fileKey."
+              }
+            },
+            {
+              "name": "Delete file",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('204 No Content', () => pm.response.to.have.status(204));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"key\": \"{{fileKey}}\"\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/files",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "files"
+                  ]
+                },
+                "description": "Needs files:delete. Only keys returned by Upload file (under files/) can be deleted."
               }
             }
           ]

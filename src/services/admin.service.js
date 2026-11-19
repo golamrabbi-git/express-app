@@ -1,4 +1,6 @@
+import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
+import * as storage from './storage.service.js';
 import * as admins from '../models/admin.store.js';
 import * as users from '../models/user.store.js';
 import { ROLE_PERMISSIONS } from '../constants/permissions.js';
@@ -82,9 +84,11 @@ export const getUser = async (id) => {
 };
 
 export const updateUser = async (id, fields) => {
+  const before = await users.findById(id);
+  if (!before) throw notFound('User');
   const user = await users.update(id, fields);
-  if (!user) throw notFound('User');
   if (fields.status === 'suspended') await revokeAllUserSessions(id);
+  if (fields.avatar !== undefined && before.avatar !== user.avatar) await storage.deleteFileByUrl(before.avatar);
   return users.toPublic(user);
 };
 
@@ -92,4 +96,21 @@ export const deleteUser = async (id) => {
   const user = await users.remove(id);
   if (!user) throw notFound('User');
   await revokeAllUserSessions(id);
+  await storage.deleteFileByUrl(user.avatar);
 };
+
+// ---- Files (product images, documents, ...) ----
+
+export const uploadFile = async (file) => {
+  const now = new Date();
+  const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+  const { key, url } = await storage.uploadFile({
+    key: `files/${now.getUTCFullYear()}/${month}/${crypto.randomUUID()}.${file.extension}`,
+    body: file.buffer,
+    contentType: file.detectedType,
+    cacheControl: 'public, max-age=31536000, immutable',
+  });
+  return { key, url, contentType: file.detectedType, size: file.size, originalName: file.originalname };
+};
+
+export const deleteFile = (key) => storage.deleteFile(key);

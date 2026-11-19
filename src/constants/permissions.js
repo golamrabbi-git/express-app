@@ -14,6 +14,8 @@ export const PERMISSIONS = [
   'products:delete',
   'orders:read',
   'orders:update',
+  'files:upload',
+  'files:delete',
 ];
 
 export const ROLES = ['super_admin', 'admin', 'support'];
@@ -35,6 +37,8 @@ export const ROLE_PERMISSIONS = {
     'products:delete',
     'orders:read',
     'orders:update',
+    'files:upload',
+    'files:delete',
   ],
   support: ['users:read', 'products:read', 'orders:read', 'orders:update'],
 };

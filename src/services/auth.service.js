@@ -1,4 +1,6 @@
+import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
+import * as storage from './storage.service.js';
 import config from '../config/index.js';
 import * as users from '../models/user.store.js';
 import { userTokenStore } from '../models/token.store.js';
@@ -49,10 +51,31 @@ export const refresh = async (refreshToken) => {
 export const logout = (refreshToken) => sessions.revoke(refreshToken);
 
 export const updateProfile = async (id, fields) => {
+  const before = await users.findById(id);
+  if (!before) throw new AppError(401, 'User no longer exists');
   const user = await users.update(id, fields);
-  if (!user) throw new AppError(401, 'User no longer exists');
+  // Avatar replaced or removed: delete the old file if we stored it.
+  if (fields.avatar !== undefined && before.avatar !== user.avatar) await storage.deleteFileByUrl(before.avatar);
   return users.toPublic(user);
 };
+
+const AVATAR_CACHE = 'public, max-age=31536000, immutable'; // each upload gets a new key, so cache forever
+
+export const setAvatar = async (id, file) => {
+  const before = await users.findById(id);
+  if (!before) throw new AppError(401, 'User no longer exists');
+  const { url } = await storage.uploadFile({
+    key: `avatars/${id}/${crypto.randomUUID()}.${file.extension}`,
+    body: file.buffer,
+    contentType: file.detectedType,
+    cacheControl: AVATAR_CACHE,
+  });
+  const user = await users.update(id, { avatar: url });
+  await storage.deleteFileByUrl(before.avatar);
+  return users.toPublic(user);
+};
+
+export const removeAvatar = async (id) => updateProfile(id, { avatar: null });
 
 export const getUserById = async (id) => {
   const user = await users.findById(id);

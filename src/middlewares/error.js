@@ -4,9 +4,15 @@ export const notFound = (req, res) => {
 
 // eslint-disable-next-line no-unused-vars
 export const errorHandler = (err, req, res, next) => {
-  const status = err.status || 500;
+  // body-parser errors carry `status` (400 bad JSON, 413 too large); anything else unexpected is a 500.
+  const status = err.status || err.statusCode || 500;
+  const message = status >= 500 && process.env.NODE_ENV !== 'development'
+    ? 'Internal Server Error'
+    : err.message || 'Internal Server Error';
+
   res.status(status).json({
-    error: err.message || 'Internal Server Error',
+    error: message,
+    ...(err.details && { details: err.details }),
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
   });
 };

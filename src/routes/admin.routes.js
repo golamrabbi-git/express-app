@@ -1,0 +1,43 @@
+import { Router } from 'express';
+import * as admin from '../controllers/admin.controller.js';
+import { authenticateAdmin, requirePermission as can } from '../middlewares/adminAuth.js';
+import { adminAuthLimiter } from '../middlewares/rateLimit.js';
+import { validate } from '../middlewares/validate.js';
+import { adminLoginSchema, refreshTokenSchema } from '../validators/auth.validator.js';
+import {
+  adminListQuerySchema,
+  changePasswordSchema,
+  createAdminSchema,
+  permissionsSchema,
+  updateAdminSchema,
+  updateUserSchema,
+  userListQuerySchema,
+} from '../validators/admin.validator.js';
+
+const router = Router();
+
+// Auth (public)
+router.post('/auth/login', adminAuthLimiter, validate({ body: adminLoginSchema }), admin.login);
+router.post('/auth/refresh', adminAuthLimiter, validate({ body: refreshTokenSchema }), admin.refresh);
+router.post('/auth/logout', validate({ body: refreshTokenSchema }), admin.logout);
+
+// Everything below needs a valid admin token.
+router.use(authenticateAdmin);
+
+router.get('/auth/me', admin.me);
+router.patch('/auth/me/password', validate({ body: changePasswordSchema }), admin.changePassword);
+router.get('/permissions', admin.listPermissions);
+
+router.get('/admins', can('admins:read'), validate({ query: adminListQuerySchema }), admin.listAdmins);
+router.post('/admins', can('admins:create'), validate({ body: createAdminSchema }), admin.createAdmin);
+router.get('/admins/:id', can('admins:read'), admin.getAdmin);
+router.patch('/admins/:id', can('admins:update'), validate({ body: updateAdminSchema }), admin.updateAdmin);
+router.patch('/admins/:id/permissions', can('permissions:manage'), validate({ body: permissionsSchema }), admin.setPermissions);
+router.delete('/admins/:id', can('admins:delete'), admin.deleteAdmin);
+
+router.get('/users', can('users:read'), validate({ query: userListQuerySchema }), admin.listUsers);
+router.get('/users/:id', can('users:read'), admin.getUser);
+router.patch('/users/:id', can('users:update'), validate({ body: updateUserSchema }), admin.updateUser);
+router.delete('/users/:id', can('users:delete'), admin.deleteUser);
+
+export default router;

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -e \"JSON.parse\\(require\\(''fs''\\).readFileSync\\(''postman_collection.json'',''utf8''\\)\\); console.log\\(''valid JSON''\\)\")",
+      "Bash(node -e \"const c=JSON.parse\\(require\\(''fs''\\).readFileSync\\(''postman_collection.json'',''utf8''\\)\\); console.log\\(''valid JSON,'', c.item.length, ''requests:'', c.item.map\\(i=>i.name\\).join\\('', ''\\)\\)\")"
+    ]
+  }
+}
